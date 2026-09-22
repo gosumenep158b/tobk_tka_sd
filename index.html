@@ -342,9 +342,8 @@
 
           <div class="field" id="f-tgl">
             <label>Tanggal Lahir <span class="req">*</span></label>
-            <input type="date" id="tanggalLahir" max="2015-12-31">
-            <div class="hint">Tahun kelahiran maksimal 2015</div>
-            <div class="error-msg">Tanggal lahir tidak valid (tahun maksimal 2015).</div>
+            <input type="date" id="tanggalLahir">
+            <div class="error-msg">Tanggal lahir wajib diisi.</div>
           </div>
 
           <div class="field" id="f-sekolah">
@@ -412,7 +411,7 @@
     </div>
 
     <footer>
-      <p><b>BIMBEL GO SUMENEP</b> · Jl. KH Agus Salim 158B, Pangarangan, Sumenep · 08112385865</p>
+      <p><b>BIMBEL GO SUMENEP</b> · Jl. Raya Karim RN 15 B, Pangarangan, Sumenep · 08112385865</p>
       <p>© 2026 Ganesha Operation - Go Sumenep. Seluruh data terlindungi.</p>
     </footer>
   </div>
@@ -420,9 +419,9 @@
 <script src="config.js"></script>
 <script>
   const SEKOLAH_LIST = [
-    'SDN Pajagalan I','SDN Pajagalan II','SDN Kolor II','SDN Pandian I','SDIT Al Hidayah',
+    'SDN Pajagalan I','SDN Pajagalan II','SDN Kolor II','SDN Pandian IV','SDIT Al Hidayah',
     'SDI Lukmanul Hakim','SDN Pangarangan I','SDN Pangarangan V','SDK Sang Timur',
-    'SDIT Al Wathoniyah','SDI Nurul Bayan','SDN Parsanga I','SDN Parsanga II','SDN Pabian IV'
+    'SDIT Al Wathoniyah','SDI Nurul Bayan'
   ];
 
   const selectEl = document.getElementById('asalSekolah');
@@ -453,11 +452,7 @@
     setInvalid('f-nama', !namaOk); if(!namaOk) valid = false;
 
     const tgl = document.getElementById('tanggalLahir').value;
-    let tglOk = false;
-    if (tgl){
-      const year = parseInt(tgl.split('-')[0], 10);
-      tglOk = year <= 2015;
-    }
+    const tglOk = !!tgl;
     setInvalid('f-tgl', !tglOk); if(!tglOk) valid = false;
 
     const sekolah = document.getElementById('asalSekolah').value;
