@@ -353,13 +353,13 @@
             <select id="asalSekolah">
               <option value="">-- Pilih Sekolah --</option>
             </select>
-            <div class="hint">Tidak menemukan sekolahmu? Pilih "Lainnya" di bagian bawah daftar.</div>
+            <div class="hint">Tidak menemukan sekolahmu? Pilih "Lainnya (Tuliskan Sendiri)" di bagian bawah daftar.</div>
             <div class="error-msg">Silakan pilih asal sekolah.</div>
           </div>
 
           <div class="field hidden" id="f-sekolah-lainnya">
             <label>Tuliskan Nama Sekolah <span class="req">*</span></label>
-            <input type="text" id="asalSekolahLainnya" placeholder="Contoh: SDN Contoh III">
+            <input type="text" id="asalSekolahLainnya" placeholder="Contoh: SDN Pangarangan III">
             <div class="error-msg">Nama sekolah wajib diisi (minimal 3 karakter).</div>
           </div>
 
@@ -466,7 +466,7 @@
 
   function setInvalid(fieldId, invalid){
     const el = document.getElementById(fieldId);
-    el.classList.toggle('invalid', invalid);
+    if(el) el.classList.toggle('invalid', invalid);
   }
 
   function validateForm(){
@@ -481,14 +481,15 @@
     const tglOk = !!tgl;
     setInvalid('f-tgl', !tglOk); if(!tglOk) valid = false;
 
+    // Validasi Asal Sekolah
     const sekolah = selectEl.value;
     const sekolahOk = !!sekolah;
     setInvalid('f-sekolah', !sekolahOk); if(!sekolahOk) valid = false;
 
-    let sekolahLainnyaOk = true;
+    // Jika memilih "Lainnya (Tuliskan Sendiri)", validasi isian teks manual
     if (sekolah === SEKOLAH_LAINNYA){
       const manual = lainnyaInput.value.trim();
-      sekolahLainnyaOk = manual.length >= 3;
+      const sekolahLainnyaOk = manual.length >= 3;
       setInvalid('f-sekolah-lainnya', !sekolahLainnyaOk); if(!sekolahLainnyaOk) valid = false;
     } else {
       setInvalid('f-sekolah-lainnya', false);
@@ -522,51 +523,88 @@
     e.preventDefault();
     if (!validateForm()) return;
 
-    if (!window.APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('GANTI_DENGAN_URL') !== -1){
-      serverError.textContent = 'APPS_SCRIPT_URL belum diatur di config.js. Lihat README.md.';
-      serverError.style.display = 'block';
-      return;
-    }
+    // Eksekusi jika dijalankan via Vercel/External (panggilan API POST)
+    if (typeof APPS_SCRIPT_URL !== 'undefined' && APPS_SCRIPT_URL.indexOf('GANTI_DENGAN_URL') === -1){
+      const payload = {
+        namaLengkap: document.getElementById('namaLengkap').value.trim(),
+        tanggalLahir: document.getElementById('tanggalLahir').value,
+        asalSekolah: selectEl.value,
+        asalSekolahLainnya: lainnyaInput.value.trim(),
+        noHpSiswa: document.getElementById('noHpSiswa').value.trim(),
+        noHpOrtu: document.getElementById('noHpOrtu').value.trim(),
+        pekerjaanOrtu: document.getElementById('pekerjaanOrtu').value.trim(),
+        persetujuan: document.getElementById('persetujuan').checked
+      };
 
-    const payload = {
-      namaLengkap: document.getElementById('namaLengkap').value.trim(),
-      tanggalLahir: document.getElementById('tanggalLahir').value,
-      asalSekolah: selectEl.value,
-      asalSekolahLainnya: lainnyaInput.value.trim(),
-      noHpSiswa: document.getElementById('noHpSiswa').value.trim(),
-      noHpOrtu: document.getElementById('noHpOrtu').value.trim(),
-      pekerjaanOrtu: document.getElementById('pekerjaanOrtu').value.trim(),
-      persetujuan: document.getElementById('persetujuan').checked
-    };
+      submitBtn.classList.add('loading');
+      submitBtn.disabled = true;
 
-    submitBtn.classList.add('loading');
-    submitBtn.disabled = true;
-
-    // Content-Type: text/plain agar tidak memicu CORS preflight (Apps Script tidak menangani OPTIONS)
-    fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    })
-      .then(function(r){ return r.json(); })
-      .then(function(res){
-        submitBtn.classList.remove('loading');
-        submitBtn.disabled = false;
-        if (res.success){
-          document.getElementById('regNumber').textContent = res.noPendaftaran;
-          document.getElementById('formScreen').style.display = 'none';
-          document.getElementById('successScreen').style.display = 'block';
-        } else {
-          serverError.textContent = res.message || 'Terjadi kesalahan, silakan coba lagi.';
-          serverError.style.display = 'block';
-        }
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
       })
-      .catch(function(err){
-        submitBtn.classList.remove('loading');
-        submitBtn.disabled = false;
-        serverError.textContent = 'Gagal terhubung ke server: ' + err.message;
-        serverError.style.display = 'block';
-      });
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+          submitBtn.classList.remove('loading');
+          submitBtn.disabled = false;
+          if (res.success){
+            document.getElementById('regNumber').textContent = res.noPendaftaran;
+            document.getElementById('formScreen').style.display = 'none';
+            document.getElementById('successScreen').style.display = 'block';
+          } else {
+            serverError.textContent = res.message || 'Terjadi kesalahan, silakan coba lagi.';
+            serverError.style.display = 'block';
+          }
+        })
+        .catch(function(err){
+          submitBtn.classList.remove('loading');
+          submitBtn.disabled = false;
+          serverError.textContent = 'Gagal terhubung ke server: ' + err.message;
+          serverError.style.display = 'block';
+        });
+    } 
+    // Eksekusi jika di-deploy sebagai Google Apps Script Native Web App
+    else if (typeof google !== 'undefined' && google.script && google.script.run) {
+      const payload = {
+        namaLengkap: document.getElementById('namaLengkap').value.trim(),
+        tanggalLahir: document.getElementById('tanggalLahir').value,
+        asalSekolah: selectEl.value,
+        asalSekolahLainnya: lainnyaInput.value.trim(),
+        noHpSiswa: document.getElementById('noHpSiswa').value.trim(),
+        noHpOrtu: document.getElementById('noHpOrtu').value.trim(),
+        pekerjaanOrtu: document.getElementById('pekerjaanOrtu').value.trim(),
+        persetujuan: document.getElementById('persetujuan').checked
+      };
+
+      submitBtn.classList.add('loading');
+      submitBtn.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(res){
+          submitBtn.classList.remove('loading');
+          submitBtn.disabled = false;
+          if (res.success){
+            document.getElementById('regNumber').textContent = res.noPendaftaran;
+            document.getElementById('formScreen').style.display = 'none';
+            document.getElementById('successScreen').style.display = 'block';
+          } else {
+            serverError.textContent = res.message || 'Terjadi kesalahan, silakan coba lagi.';
+            serverError.style.display = 'block';
+          }
+        })
+        .withFailureHandler(function(err){
+          submitBtn.classList.remove('loading');
+          submitBtn.disabled = false;
+          serverError.textContent = 'Gagal terhubung ke server: ' + err.message;
+          serverError.style.display = 'block';
+        })
+        .submitPendaftaran(payload);
+    } 
+    else {
+      serverError.textContent = 'Konfigurasi APPS_SCRIPT_URL belum diatur.';
+      serverError.style.display = 'block';
+    }
   });
 
   document.getElementById('newRegBtn').addEventListener('click', function(){
