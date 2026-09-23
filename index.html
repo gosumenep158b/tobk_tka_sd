@@ -346,9 +346,8 @@
           </div>
 
           <div class="field hidden" id="f-sekolah-lainnya">
-            <label>Tuliskan Nama Sekolah <span class="req">*</span></label>
+            <label>Tuliskan Nama Sekolah</label>
             <input type="text" id="asalSekolahLainnya" placeholder="Contoh: SDN Pangarangan III">
-            <div class="error-msg">Nama sekolah wajib diisi (minimal 3 karakter).</div>
           </div>
 
           <div class="field" id="f-hpsiswa">
@@ -440,7 +439,6 @@
     lainnyaField.classList.toggle('hidden', !isLainnya);
     if (!isLainnya){
       lainnyaInput.value = '';
-      lainnyaField.classList.remove('invalid');
     }
   }
   selectEl.addEventListener('change', toggleLainnyaField);
@@ -473,14 +471,6 @@
     const sekolah = selectEl.value;
     const sekolahOk = !!sekolah;
     setInvalid('f-sekolah', !sekolahOk); if(!sekolahOk) valid = false;
-
-    if (sekolah === SEKOLAH_LAINNYA){
-      const manual = lainnyaInput.value.trim();
-      const sekolahLainnyaOk = manual.length >= 3;
-      setInvalid('f-sekolah-lainnya', !sekolahLainnyaOk); if(!sekolahLainnyaOk) valid = false;
-    } else {
-      setInvalid('f-sekolah-lainnya', false);
-    }
 
     const hpSiswa = document.getElementById('noHpSiswa').value.trim();
     const hpSiswaOk = HP_REGEX.test(hpSiswa);
