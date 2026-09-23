@@ -253,20 +253,8 @@
   }
   .success-screen h2{
     color:#2E7D32;
-    font-size:20px;
+    font-size:22px;
     margin:0 0 8px;
-  }
-  .success-screen p{color:var(--gray); font-size:14px; margin:0 0 18px;}
-  .reg-number{
-    background:#FFF8F0;
-    border:1.6px dashed var(--gold);
-    border-radius:12px;
-    padding:12px;
-    font-size:18px;
-    font-weight:800;
-    color:var(--red-dark);
-    letter-spacing:1px;
-    margin-bottom:20px;
   }
   .wa-join-btn{
     display:flex;
@@ -408,7 +396,7 @@
       <div class="success-screen" id="successScreen">
         <div class="check-circle">✓</div>
         <h2>Terima Kasih!</h2>
-        <p style="font-size: 16px; font-weight: 600; color: #2E7D32; margin-bottom: 24px;">
+        <p style="font-size: 15px; font-weight: 600; color: #2E7D32; margin-bottom: 24px; line-height: 1.5;">
           Data Peserta TOBK sudah berhasil tersimpan.
         </p>
         <a href="https://chat.whatsapp.com/J5BcvbSeSVc2iPLq2jsYNY?s=sh&p=a&mlu=4&ilr=4" target="_blank" rel="noopener" class="wa-join-btn">
@@ -418,6 +406,7 @@
           <button class="new-reg-btn" id="newRegBtn">Daftarkan siswa lain</button>
         </div>
       </div>
+    </div>
 
     <footer>
       <p><b>GO SUMENEP</b> · Jl. KH. Agus Salim 158B, Pangarangan, Sumenep · 08112385865</p>
@@ -481,12 +470,10 @@
     const tglOk = !!tgl;
     setInvalid('f-tgl', !tglOk); if(!tglOk) valid = false;
 
-    // Validasi Asal Sekolah
     const sekolah = selectEl.value;
     const sekolahOk = !!sekolah;
     setInvalid('f-sekolah', !sekolahOk); if(!sekolahOk) valid = false;
 
-    // Jika memilih "Lainnya (Tuliskan Sendiri)", validasi isian teks manual
     if (sekolah === SEKOLAH_LAINNYA){
       const manual = lainnyaInput.value.trim();
       const sekolahLainnyaOk = manual.length >= 3;
@@ -523,22 +510,22 @@
     e.preventDefault();
     if (!validateForm()) return;
 
-    // Eksekusi jika dijalankan via Vercel/External (panggilan API POST)
+    const payload = {
+      namaLengkap: document.getElementById('namaLengkap').value.trim(),
+      tanggalLahir: document.getElementById('tanggalLahir').value,
+      asalSekolah: selectEl.value,
+      asalSekolahLainnya: lainnyaInput.value.trim(),
+      noHpSiswa: document.getElementById('noHpSiswa').value.trim(),
+      noHpOrtu: document.getElementById('noHpOrtu').value.trim(),
+      pekerjaanOrtu: document.getElementById('pekerjaanOrtu').value.trim(),
+      persetujuan: document.getElementById('persetujuan').checked
+    };
+
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+
+    // Jika berjalan via APPS_SCRIPT_URL (External / Vercel)
     if (typeof APPS_SCRIPT_URL !== 'undefined' && APPS_SCRIPT_URL.indexOf('GANTI_DENGAN_URL') === -1){
-      const payload = {
-        namaLengkap: document.getElementById('namaLengkap').value.trim(),
-        tanggalLahir: document.getElementById('tanggalLahir').value,
-        asalSekolah: selectEl.value,
-        asalSekolahLainnya: lainnyaInput.value.trim(),
-        noHpSiswa: document.getElementById('noHpSiswa').value.trim(),
-        noHpOrtu: document.getElementById('noHpOrtu').value.trim(),
-        pekerjaanOrtu: document.getElementById('pekerjaanOrtu').value.trim(),
-        persetujuan: document.getElementById('persetujuan').checked
-      };
-
-      submitBtn.classList.add('loading');
-      submitBtn.disabled = true;
-
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -549,7 +536,6 @@
           submitBtn.classList.remove('loading');
           submitBtn.disabled = false;
           if (res.success){
-            document.getElementById('regNumber').textContent = res.noPendaftaran;
             document.getElementById('formScreen').style.display = 'none';
             document.getElementById('successScreen').style.display = 'block';
           } else {
@@ -564,28 +550,13 @@
           serverError.style.display = 'block';
         });
     } 
-    // Eksekusi jika di-deploy sebagai Google Apps Script Native Web App
+    // Jika berjalan langsung sebagai Web App Apps Script Native
     else if (typeof google !== 'undefined' && google.script && google.script.run) {
-      const payload = {
-        namaLengkap: document.getElementById('namaLengkap').value.trim(),
-        tanggalLahir: document.getElementById('tanggalLahir').value,
-        asalSekolah: selectEl.value,
-        asalSekolahLainnya: lainnyaInput.value.trim(),
-        noHpSiswa: document.getElementById('noHpSiswa').value.trim(),
-        noHpOrtu: document.getElementById('noHpOrtu').value.trim(),
-        pekerjaanOrtu: document.getElementById('pekerjaanOrtu').value.trim(),
-        persetujuan: document.getElementById('persetujuan').checked
-      };
-
-      submitBtn.classList.add('loading');
-      submitBtn.disabled = true;
-
       google.script.run
         .withSuccessHandler(function(res){
           submitBtn.classList.remove('loading');
           submitBtn.disabled = false;
           if (res.success){
-            document.getElementById('regNumber').textContent = res.noPendaftaran;
             document.getElementById('formScreen').style.display = 'none';
             document.getElementById('successScreen').style.display = 'block';
           } else {
@@ -602,6 +573,8 @@
         .submitPendaftaran(payload);
     } 
     else {
+      submitBtn.classList.remove('loading');
+      submitBtn.disabled = false;
       serverError.textContent = 'Konfigurasi APPS_SCRIPT_URL belum diatur.';
       serverError.style.display = 'block';
     }
